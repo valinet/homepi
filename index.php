@@ -148,7 +148,7 @@ background: green; font-weight:bold; color: #fff; border-color: green;}
 	<h1>Media Centre Control</h1>
 </div>
 <div class="container widthel">
-<form action="<?php echo shell_exec('etherwake -i eth0 $mac0'); ?>" method="post">
+<form action="<?php shell_exec('etherwake -i eth0 ' . $mac0); ?>" method=post>
 	<p>Wake:
 		<input type="submit" value="ThinkPad">
 	</p>

@@ -89,6 +89,13 @@ For ddcutil to work, you need to enable i2c by adding the following line in */bo
 dtparam=i2c2_iknowwhatimdoing
 ```
 
+Also, add yourself to i2c group, and also www-data, in order to run ddcutil without sudo (it needs access to i2c bus):
+
+```
+sudo usermod -aG i2c pi
+sudo usermod -aG i2c www-data
+```
+
 Because my 4K monitor has a single HDMI port which is taken by the HDMI switch, and a single DisplayPort which is taken by the ThinkPad Ultra Dock, I am left with two other ports: VGA and DVI. Initially, the Pi was connected via an HDMI-to-DVI cable to DVI on the monitor, but since I needed that cable for adding some secondary monitors, I decided to migrate to controlling the monitor via the i2c bus in the VGA connector (also, it meant I no longer had to execute a service, at startup, that just run *tvservice -o* basically). I figured out which pins of the connector represent the 5V, GND, SCA, and SCL with the help of this resource: http://www.righto.com/2018/03/reading-vga-monitors-configuration-data.html. Then, I mapped those to appropiate pins on Raspberry Pi: pin 2 - 5V, pin 6 - GND, pin 3 - SDA, pin 5- SCL using jumper wires. Finally, enable i2c on RPi by adding the following to */boot/config.txt*:
 
 ```
@@ -96,6 +103,12 @@ dtparam=i2c_arm=on
 ```
 
 I did not use level shifters because as far as I know, i2c devices only pull the line low, while it is kept high by the master, which in this case is RPi, which keeps at 3.3V as RPi is a 3.3V device. Monitors use 5V logic, but they should only pull the line down. Apparently, the monitor and RPi both can "understand" 3.3V as high, so I got away with it. It worked with my setup, it did not fry anything, but I think I may need more clarification about it, feel free to help me out.
+
+To specify a different i2c bus when invoking ddcutil, pass the *--bus x* argument, where x is the number in something like */dev/i2c-1*. On my RPi, the bus is indeed 1. Test if ddcutil detects something with the following command:
+
+```
+ddcutil --bus 1 detect
+```
 
 For controlling the HDMI switch using infrared, you also need to install LIRC, which on Raspberry Pi 3 running Raspbian Buster is a bit involved and requires patching the library. Luckily, someone wrote some files to automate this, you can read about it here: https://www.raspberrypi.org/forums/viewtopic.php?f=28&t=235256. In short, the commands are along the lines of:
 
