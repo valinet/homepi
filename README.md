@@ -1,6 +1,10 @@
 # homepi
 **homepi** contains configuration data and front end files for the Raspberry Pi that automates my home office setup.
 
+![Screenshot](/conf/homepi.png?raw=true "Screenshot")
+
+Rant: I made the mistake of taking the screenshot using the "improved" Win+Ctrl+S crap instead of using trusty Snipping Tool. It seems that it cannot handle 3 monitors properly and snipped some more content on the left side. I leave it here as a testimony of the skill of some employees at Microsoft (not all, the WSL guys are brilliant, for example), and their managers, who do not have anything better to do with their time than to reinvent built-in tools and chnage OS icons every 6 months on a period of 10 years. Don't worry, I have rants prepared for other parties, as well.
+
 ## What does it do?
 
 **homepi** allows me to:
@@ -229,7 +233,7 @@ sudo apt install printer-driver-brlaser
 
 Finally, it is a matter of browsing to http://homepi.local:631 (or whatever your Pi's hostname is) and adding a new printer from the interface. Choose the printer connected via USB. For model, HL1110 is not available in the list, so I simply chose: "Brother DCP-1510 series, using brlaser (en)" and it worked.
 
-That's it, I hope I did not miss major deal breakers. To access the web service, go to http://homepi.local (if mDNS discovery is supported by your OS - spolier: Android, despite reaching version 11 this year, and being backed by Google which is too bothered to work on "really" important things, still does not support mDNS .local domains; "just" download Android Studio and create a web view app which just loads the web site in a damn web view, as there actually is an [mDNS API in Android](https://developer.android.com/training/connect-devices-wirelessly/nsd) which can discover your RPi domain - I did this for a previous project when I was daily driving an droid, yet again, I do not remember where I put the files - should I find them, I will upload the example at the earliest convinience; it is stupid, useless, but hey, I hate memorizing IPs, even though my Pi runs on one I used statically since forever, and Google really has to rearrange the icons in the notification area again this year so they ain't got time for "boring" stuff like that).
+That's it, I hope I did not miss major deal breakers. To access the web service, go to http://homepi.local (if mDNS discovery is supported by your OS - Rant & spoiler: Android, despite reaching version 11 this year, and being backed by Google which is too bothered to work on "really" important things, still does not support mDNS .local domains; "just" download Android Studio and create a web view app which just loads the web site in a damn web view, as there actually is an [mDNS API in Android](https://developer.android.com/training/connect-devices-wirelessly/nsd) which can discover your RPi domain - I did this for a previous project when I was daily driving an droid, yet again, I do not remember where I put the files - should I find them, I will upload the example at the earliest convinience; it is stupid, useless, but hey, I hate memorizing IPs, even though my Pi runs on one I used statically since forever, and Google really has to rearrange the icons in the notification area again this year so they ain't got time for "boring" stuff like that).
 
 Thanks for bearing with me, hope you find this useful!
 
