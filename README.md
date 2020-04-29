@@ -1,7 +1,7 @@
 # homepi
 **homepi** contains configuration data and front end files for the Raspberry Pi that automates my home office setup.
 
-![Screenshot](/conf/homepi.png?raw=true "Screenshot")
+![Screenshot](/conf/homepi.png "Screenshot")
 
 Rant: I made the mistake of taking the screenshot using the "improved" Win+Ctrl+S crap instead of using trusty Snipping Tool. It seems that it cannot handle 3 monitors properly and snipped some more content on the left side. I leave it here as a testimony of the skill of some employees at Microsoft (not all, the WSL guys are brilliant, for example), and their managers, who do not have anything better to do with their time than to reinvent built-in tools and chnage OS icons every 6 months on a period of 10 years. Don't worry, I have rants prepared for other parties, as well.
 
@@ -20,11 +20,31 @@ Rant: For me, automation does not mean stupid cloud connected voice assistants -
 
 ## Configuration
 
-**homepi** run as a simple web interface. To access it, you'll need a web server and a PHP interpreter. Initially, I used Apache2, but did not have time to bother with its crappy config files so I switched to nginx which took 5 minutes to configure, using the first Google hit (for some reason, Apache would not serve files in subdirectories, and I got fed up with attempting to fix it). A generic command would be:
+**homepi** run as a simple web interface. To access it, you'll need a web server, a PHP interpreter and a memory cacher. Initially, I used Apache2, but did not have time to bother with its crappy config files so I switched to nginx which took 5 minutes to configure, using the first Google hit (for some reason, Apache would not serve files in subdirectories, and I got fed up with attempting to fix it). A generic command would be:
 
 ```
-sudo apt install nginx php-fpm
+sudo apt install nginx php php-fpm memcached php-memcached libmemcached-dev gcc make
 ```
+
+I used a cache in order not to query the display for its brightness and volume level every time I launch the web service, since I never change it using the OSD and the ddcutil call took quite a bit of time to process, which slowed down the load. Furthermore, in order for the page to respond fast, I created a daemon that runs in the background and waits for commands (for example, modify screen brightness, turn on HDMI switch etc) put in the cache by the web server. This way, PHP is not blocking on a *shell_exec* call, which can slow down the loading of the page after a value has been changed, as well. Furthermore, this way, the commands will run under the regular *pi* user (we explicitly mention this in the systemd service file). In fact, there are many more advantages to asyncing commands, like the fact that if you were to build a queue and spam commands too fast, the dequeuing may happen slower than the enqueuing, which may lead to devices overloading and the Pi's memory eventually being eaten out. Current implementation checks every 1/10th of a second (configurable, of course, in *homepi.c*) the command shared on the bus and executes it. If you send more than approximately 10 commands per second, some of them will be naturally filtered out, allowing the commanded devices to actually have a chance to process and not become overloaded. With this solution, we also achieve a threaded model, but we do not have to worry about mutexes, semaphores, or locks as the cache implementation takes care of it for us. In the end, I also learned how great and simple this memcached tool is.
+
+First off, compile the daemon:
+
+```
+CFLAGS=-Wall\ -Wno-main LDFLAGS=-lmemcached make homepi
+```
+
+Then, copy the sample systemd service, reload the daemon, enable it to run at startup and load it (also, reload php-fpm service just to make sure memcached gets loaded into php; you can check by visiting the *info.php* subpage):
+
+```
+sudo cp conf/homepi.service /etc/systemd/system/homepi.service
+sudo systemctl daemon-reload
+sudo systemctl enable homepi
+sudo systemctl start homepi
+sudo systemctl restart php7.3-fpm
+```
+
+I have to warn you that this mechanism I developed is a first iteration. There may be bugs or exploit possibilities, I haven't really looked into it, I just coded it to achieve this purpose and that was it. The warning stands for all the scripts provided here, use them at your own risk and do not deploy them in production environments without a prior thoughtful analysis.
 
 I modified the default nginx config to something like this:
 

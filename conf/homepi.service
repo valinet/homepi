@@ -1,0 +1,11 @@
+[Unit]
+Description=Execute commands coresponding to actions in the homepi web service
+After=systemd.mount
+
+[Service]
+Type=simple
+User=pi
+ExecStart=/var/www/html/homepi
+
+[Install]
+WantedBy=multi-user.target

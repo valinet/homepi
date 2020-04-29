@@ -1,30 +1,61 @@
 <?php
-$mac0 = file_get_contents('macs/mac0.txt');
+$memCache = new Memcached();
+$memCache->addServer("127.0.0.1", 11211);
 $volumeInc = 2;
 $ddcutilArgs = "--bus 1";
 if ($_SERVER["REQUEST_METHOD"] == "GET"){
-	$brightnessValue=shell_exec('ddcutil ' . $ddcutilArgs . ' getvcp --terse 10 | cut -d" " -f4');
-	$volumeValue=hexdec('0' . shell_exec('ddcutil ' . $ddcutilArgs . ' getvcp --terse 62 | cut -d" " -f7'));
-//	$inputValue=trim(shell_exec('ddcutil ' . $ddcutilArgs . ' getvcp --terse 60 | cut -d" " -f4'));
-//	echo $inputValue;
-/* <?php echo (!strcmp($inputValue, 'x11') ? 'checked' : ''); ?> */
+	$brightnessValue = $memCache->get("monitorBrightness");
+	if (!$brightnessValue)
+	{
+	        $brightnessValue=shell_exec('ddcutil ' . $ddcutilArgs . ' getvcp --terse 10 | cut -d" " -f4');
+	        $memCache->set("monitorBrightness", $brightnessValue);
+	}
+	$volumeValue = $memCache->get("monitorVolume");
+	if (!$volumeValue)
+	{
+	        $volumeValue=hexdec('0' . shell_exec('ddcutil ' . $ddcutilArgs . ' getvcp --terse 62 | cut -d" " -f7'));
+	        $memCache->set("monitorVolume", $volumeValue);
+	}
+	$mac0 = $memCache->get("mac0");
+	if (!$mac0)
+	{
+	        $mac0 = rtrim(file_get_contents('macs/mac0.txt'));
+	        $memCache->set("mac0", $mac0);
+	}
+	unset($memCache);
 }
 if ($_SERVER["REQUEST_METHOD"] == "POST"){
-	//print_r($_POST);
-	$brightnessValue=$_POST['brightness'];
-	shell_exec('ddcutil ' . $ddcutilArgs . ' setvcp 10 '.$brightnessValue);
+	$action = $_POST['realAction'];
+	switch ($action)
+	{
+		case 1:
+	                $volumeValue=$_POST['volume'];
+                	$memCache->set("monitorVolume", $volumeValue);
+			$memCache->set("homePiCommand", 'ddcutil ' . $ddcutilArgs . ' setvcp 62 '.$volumeValue . ' > /dev/null 2>/dev/null &');
+			break;
+		case 2:
+			$brightnessValue=$_POST['brightness'];
+	        	$memCache->set("monitorBrightness", $brightnessValue);
+			$memCache->set("homePiCommand", 'ddcutil ' . $ddcutilArgs . ' setvcp 10 ' . $brightnessValue . ' > /dev/null 2>/dev/null &');
+			break;
+	}
 	$inputValue=$_POST['source'];
-	shell_exec('ddcutil ' . $ddcutilArgs . ' setvcp 60 '.$inputValue);
-	$volumeValue=$_POST['volume'];
-	shell_exec('ddcutil ' . $ddcutilArgs . ' setvcp 62 '.$volumeValue);
-	$hostname=substr(shell_exec('cat /etc/hostname'), 0, -1);
+	if (isset($inputValue))
+	{
+		$memCache->set("homePiCommand", 'ddcutil ' . $ddcutilArgs . ' setvcp 60 '.$inputValue . ' > /dev/null 2>/dev/null &');
+	}
 	$switchCmd=$_POST['switchcmd'];
-//	if (empty($switchCmd) != 1)
-//	{
-		shell_exec('irsend SEND_ONCE Delock '.$switchCmd);
-//		shell_exec('ddcutil setvcp 60 17');
-//	}
-	header('Location: http://' . $hostname . '.local/');
+	if (isset($switchCmd))
+	{
+		$memCache->set("homePiCommand", 'irsend SEND_ONCE Delock ' . $switchCmd . ' > /dev/null 2>/dev/null &');
+	}
+	$wake = $_POST['wake'];
+	if (isset($wake))
+	{
+		$memCache->set("homePiCommand", 'etherwake -i eth0 ' . $mac0 . ' > /dev/null 2>/dev/null &');
+	}
+	unset($memCache);
+	header('Location: http://' . gethostname() . '.local/');
 }
 ?>
 <!DOCTYPE html>
@@ -148,15 +179,15 @@ background: green; font-weight:bold; color: #fff; border-color: green;}
 	<h1>Media Centre Control</h1>
 </div>
 <div class="container widthel">
-<form action="<?php shell_exec('etherwake -i eth0 ' . $mac0); ?>" method=post>
-	<p>Wake:
-		<input type="submit" value="ThinkPad">
-	</p>
-</form>
 <form action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]);?>" method=post>
+	<input name="realAction" style="display: none" value="0">
+	<div class="cssradio">
+	        Wake:<br/>
+		<input onclick="this.form.submit()" type="radio" id="WakeThinkPad" name="wake" value="0"><label for="WakeThinkPad">ThinkPad</label>
+	</div>
 	<p>Volume:</p>
 	<div class="sliderContainer">
-		<input name="volume" type="range" min="0" max="100" value=<?php echo $volumeValue; ?> class="slider" id="volumeSlider" oninput="volumeValue.value = volumeSlider.value" onchange="this.form.submit()">
+		<input name="volume" type="range" min="0" max="100" value=<?php echo $volumeValue; ?> class="slider" id="volumeSlider" oninput="volumeValue.value = volumeSlider.value" onchange="realAction.value = 1; this.form.submit()">
 		<output id="volumeValue"><?php echo $volumeValue; ?></output><br/>
 		<a class="iconAnchor" href="#" onclick="document.getElementById('volumeSlider').value = 0; document.getElementById('volumeValue').value = 0; document.forms[0].submit();"><img class="iconImg" src="icons/mute.png"></a>
 		<a class="iconAnchor" href="#" onclick="document.getElementById('volumeSlider').value = document.getElementById('volumeSlider').value * 1 - <?php echo $volumeInc; ?>; document.getElementById('volumeValue').value = document.getElementById('volumeValue').value * 1 - <?php echo $volumeInc; ?>; document.forms[0].submit();"><img class="iconImg" src="icons/minus.png"></a>
@@ -165,7 +196,7 @@ background: green; font-weight:bold; color: #fff; border-color: green;}
 	</div>
 	<p>Adjust monitor brightness:</p>
 	<div class="sliderContainer">
-		<input name="brightness" type="range" min="1" max="100" value=<?php echo $brightnessValue; ?> class="slider" id="brightnessSlider" oninput="brightnessValue.value = brightnessSlider.value" onchange="this.form.submit()">
+		<input name="brightness" type="range" min="1" max="100" value=<?php echo $brightnessValue; ?> class="slider" id="brightnessSlider" oninput="brightnessValue.value = brightnessSlider.value" onchange="realAction.value = 2; this.form.submit()">
 		<output id="brightnessValue"><?php echo $brightnessValue; ?></output>
 	</div>
 	<br>
