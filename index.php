@@ -1,6 +1,7 @@
 <?php
 $memCache = new Memcached();
 $memCache->addServer("127.0.0.1", 11211);
+$mac0 = $memCache->get("mac0");
 $volumeInc = 2;
 $ddcutilArgs = "--bus 1";
 if ($_SERVER["REQUEST_METHOD"] == "GET"){
@@ -16,7 +17,6 @@ if ($_SERVER["REQUEST_METHOD"] == "GET"){
 	        $volumeValue=hexdec('0' . shell_exec('ddcutil ' . $ddcutilArgs . ' getvcp --terse 62 | cut -d" " -f7'));
 	        $memCache->set("monitorVolume", $volumeValue);
 	}
-	$mac0 = $memCache->get("mac0");
 	if (!$mac0)
 	{
 	        $mac0 = rtrim(file_get_contents('macs/mac0.txt'));

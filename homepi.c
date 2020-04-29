@@ -48,6 +48,7 @@ __attribute__((noreturn)) void main(int argc, char **argv) {
 				(uint32_t)0
 			);
 		}
+		free(cmd);
 		usleep(SLEEPCT);
 	}
 	while (1);
