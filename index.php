@@ -62,7 +62,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST"){
 <html>
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Media Centre Control</title>
+<title>homepi</title>
 <style>
 .cssradio input[type="radio"]{display: none;}
 .cssradio label{padding: 10px; margin: 15px 10px 0 0;
@@ -74,7 +74,7 @@ background: green; font-weight:bold; color: #fff; border-color: green;}
 
 * {
   box-sizing: border-box;
-//  font-family: "Arial", Arial, serif;
+  font-family: "Helvetica Neue", Helvetica Neue, serif;
 }
 
 .slidercontainer {
@@ -175,11 +175,9 @@ background: green; font-weight:bold; color: #fff; border-color: green;}
 </style>
 </head>
 <body>
-<div class="heading widthel">
-	<h1>Media Centre Control</h1>
-</div>
 <div class="container widthel">
 <form action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]);?>" method=post>
+	<h2>homepi</h2>
 	<input name="realAction" style="display: none" value="0">
 	<div class="cssradio">
 	        Wake:<br/>
