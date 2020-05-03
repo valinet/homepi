@@ -1,0 +1,11 @@
+[Unit]
+Description=Notify remote clients about volume change on homepi
+After=systemd.mount
+
+[Service]
+Type=simple
+User=pi
+ExecStart=/var/www/html/homectl/homectl_server 15520 /dev/input/event0 /var/www/html/macs/mac0.txt
+
+[Install]
+WantedBy=multi-user.target

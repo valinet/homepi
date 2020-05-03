@@ -14,6 +14,7 @@ Rant: I made the mistake of taking the screenshot using the "improved" Win+Ctrl+
 * change source for my [Delock 4K HDMI 2.0 18685 switch](https://www.delock.com/produkt/18685/merkmale.html), by sending IR commands I captured from the remote using [LIRC](https://www.lirc.org/) (there are some more expensive, fancier switches that have a serial port, or cheaper ones which only have buttons so you'll have to resort to soldering some transistors on those)
 * make my printer available on the LAN, which is a [Brother HL-1110](https://support.brother.com/g/b/downloadtop.aspx?c=eu_ot&lang=en&prod=hl1110_us_eu_as), using [CUPS](https://www.cups.org/)
 * download and upload files quickly from and to the Pi
+* allow for changing volume, play/pause active media, sleep/wake my ThinkPad laptop using the buttons on a wired mouse connected to the Raspberry Pi
 * in the past, it used to control my no-name AC unit as well, but I have since changed the place I live in and haven't merged the files; fortunately, the summer is coming and I will need the AC back so I will integrate that as well, probably; I still have the Arduino files, the IR remote used some lengthy codes which I had to figure their meaning, since the ATmega does not have enough memory to hardcode all the values - plus it would've been way more boring than actually "cracking" the codes
 
 Rant: For me, automation does not mean stupid cloud connected voice assistants - it means creating shortcuts using efficient and straight forward ways without any unnecessary third parties or dependencies. I do not need for various assistants to listen to me just to change the damn monitor input, I can do it perfectly fine myself, way quicker by browsing to a site in Safari on my iPhone than waiting for the "AI" to figure what the hell I meant. Also, constantly not having these AIs in any other native language than English and a few others, despite text to speech existing for decades now, makes anyone talking to them look weird, and it becomes cumbersome so I'd rather not (fun fact, Siri was hacked to work in other languages, such as Romanian, [a long time ago](https://www.youtube.com/watch?v=6NWRbzZCHn8), yet Apple, due to some stupid reason, still keeps it closed and unavailable for a lot of user - same way it provides a suggestion bar on the keyboard only for 3 languages, while others keyboards implement multiple languages simultaneously).
@@ -252,6 +253,43 @@ sudo apt install printer-driver-brlaser
 ```
 
 Finally, it is a matter of browsing to http://homepi.local:631 (or whatever your Pi's hostname is) and adding a new printer from the interface. Choose the printer connected via USB. For model, HL1110 is not available in the list, so I simply chose: "Brother DCP-1510 series, using brlaser (en)" and it worked.
+
+To use the wired mouse connected to the RPi as a controller on the PC, the RPi and the PC will "talk" using a custom protocol over a network socket. I have implemented a Linux server in C, which uses the high performance epoll API to manage data from incoming connections. On the client side, I have also implemented a Window application which connects to the server and gets data about pressed buttons and wheel activity on the mouse (the application uses the equivalent API to epoll: CompletionPorts). Communication is done over port 15520. Although not necessarily needed, the use of high performance APIs gives good knowledge and makes for useful examples on how to use them. You can take a look at the code and learn about sockets programming both in Linux (including an example of crafting and sending a Wake on LAN package) and using Winsock in Windows (also, various other stufff is touched, like DNS queries in the OS, triggering the media OSD and changing system master volume etc).
+
+First, on RPi, compile the Linux server (in "homectl" directory), copy the service file to system, reload the systemd daemon, enable and start the service:
+
+```
+make homectl_server
+sudo cp ../conf/homectl.service /etc/systemd/system/homectl.service
+sudo systemctl daemon-reload
+sudo systemctl enable homectl
+sudo systemctl start homectl
+```
+
+Lastly, on Windows, you have to compile the application and add it to startup. For that, I recommend creating a task in Task Scheduler. The application takes 2 arguments: a domain name for your RPi (specify the mDNS .local domain) - this way, you do not have to remember IP addresses, and the port to connect to (by default, 15520). A valid command for ruinning the application would be:
+
+```
+homectl_client.exe homepi.local 15520
+```
+
+To compile, you need the following:
+
+* a compiler; I used Microsoft's compiler, cl (Microsoft C/C++ Optimizing Compiler); it comes with Visual Studio but can be obtained separately by installing *Build Tools for Visual Studio*; download the most recent version here: https://visualstudio.microsoft.com/thank-you-downloading-visual-studio/?sku=BuildTools
+* a Windows SDK (provides headers and import libraries for accessing OS functionality); download the most recent version here: https://go.microsoft.com/fwlink/p/?linkid=2083338&clcid=0x409 
+
+Alternatively, you can download and install Visual Studio, a fully featured IDE for Windows development, whose installation allows you to install many things including the two components mentioned above.
+
+Anyway, to compile, open the Start menu, and search for *x64 Native Tools Command Prompt for VS*. A command window will open, that will have the Microsoft build tools appended to PATH. To compile, in the directory where the "homectl_client.c" file is, issue:
+
+```
+cl homectl_client.c
+```
+
+A file named "homectl_client.exe" will be generated. That's the program, which you have to run by passing those two arguments. If you want to have the program run in a command window and output there, after compiling, change the subsystem of the file to console using editbin. Note that this will make the app launch a console window if already run from a console (like Command Prompt), thanks to Microsoft providing a completely broken and shitty console system in Windows.
+
+```
+editbin /subsystem:console homectl_client.exe
+```
 
 That's it, I hope I did not miss major deal breakers. To access the web service, go to http://homepi.local (if mDNS discovery is supported by your OS - Rant & spoiler: Android, despite reaching version 11 this year, and being backed by Google which is too bothered to work on "really" important things, still does not support mDNS .local domains; "just" download Android Studio and create a web view app which just loads the web site in a damn web view, as there actually is an [mDNS API in Android](https://developer.android.com/training/connect-devices-wirelessly/nsd) which can discover your RPi domain - I did this for a previous project when I was daily driving an droid, yet again, I do not remember where I put the files - should I find them, I will upload the example at the earliest convinience; it is stupid, useless, but hey, I hate memorizing IPs, even though my Pi runs on one I used statically since forever, and Google really has to rearrange the icons in the notification area again this year so they ain't got time for "boring" stuff like that).
 
