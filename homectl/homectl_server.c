@@ -20,6 +20,9 @@
 
 #define BUFSIZE 1024
 
+#define BTN_SIDE_LEFT 275
+#define BTN_SIDE_RIGHT 276
+
 struct fdlist {
 	int fd;
 	struct fdlist *next;
@@ -216,7 +219,8 @@ int main(int argc, char *argv[])
 			((event_data.type == EV_REL &&
 			event_data.code == REL_WHEEL) ||
 			(event_data.type == EV_KEY &&
-			(event_data.code == BTN_LEFT || event_data.code == BTN_RIGHT || event_data.code == BTN_MIDDLE)))
+			(event_data.code == BTN_LEFT || event_data.code == BTN_RIGHT || event_data.code == BTN_MIDDLE ||
+			 event_data.code == BTN_SIDE_LEFT || event_data.code == BTN_SIDE_RIGHT)))
 		)
 		{
                         if (event_data.type == EV_KEY && event_data.value == 0 && event_data.code == BTN_MIDDLE)

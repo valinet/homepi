@@ -1,0 +1,10 @@
+[Unit]
+Description=Turn HDMI off on startup
+After=systemd.mount
+
+[Service]
+Type=simple
+ExecStart=/bin/bash -c "if [[ -f "/boot/hdmi_off" ]]; then /usr/bin/tvservice -o; fi"
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,10 @@
+[Unit]
+Description=Enable sending IR commands on multiple LEDs
+After=systemd.mount network-online.target syslog.target
+
+[Service]
+Type=notify
+ExecStart=/usr/sbin/lircd --nodaemon --device=/dev/lirc0 --pidfile=/var/run/lirc/lirc0.pid --listen=8700 --connect=localhost:8700 --output=/var/run/lirc/lircd
+
+[Install]
+WantedBy=multi-user.target
